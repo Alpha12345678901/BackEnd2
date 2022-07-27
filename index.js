@@ -9,7 +9,9 @@ io.on("connection", socket => {
   });
   socket.on("join", (params, callback)=>{
     socket.join(params);
-    console.log(params);
+    if(io.sockets.adapter.rooms.get(params).size==2){
+      io.to(params).emit("HI");
+    }
   });
 });
 
