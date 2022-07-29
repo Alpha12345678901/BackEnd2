@@ -2,16 +2,32 @@ const app = require("express")();
 const httpServer = require("http").createServer(app);
 const options = {cors: {orgin:"*"}};
 const io = require("socket.io")(httpServer, options);
-const fileUpload = require('express-fileupload');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const morgan = require('morgan');
-const _ = require('lodash');
+const multer = require("multer");
+const cors = require("cors");
+const path = require('path');
+const fs = require('fs');
+const spawn = require("child_process").spawn;
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(morgan('dev'));
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './AI')
+  },
+  filename: function (req, file, cb) {
+    console.log(file.originalname);
+    var name=req.query.name;
+    cb(null,  name.substring(0,name.indexOf("@"))+"-"+file.originalname) //Appending .jpg
+  }
+})
+const upload =multer({ storage: storage });
 io.on("connection", socket => {
+  socket.on("moveAI", (params)=>{
+    console.log(params);
+const pythonProcess = spawn('python',["./AI/"+params.AIName, params.Game]);
+    pythonProcess.stdout.on('data', (data) => {
+      socket.emit("MoveMade",String(data))
+      console.log(String(data));
+    });
+})
   socket.on("creat", (params , callback)=>{
     if(socket.rooms.size==0){
      socket.join(socket.id);
@@ -43,8 +59,51 @@ io.on("connection", socket => {
     console.log(params);
   });
 });
-app.post("/uploadAI", async (req, res)=>{
-  console.log(req.files);
+app.post("/uploadAI", upload.single('file'), (req, res) => {
+
+  res.json({ file: req.file });
 });
+app.get("/ListUserAI", (req, res)=>{
+  validFile=[];
+var name=req.query.name;
+name=name.substring(0,name.indexOf("@"));
+  console.log(name);
+  const directoryPath = path.join(__dirname, 'AI');
+  fs.readdir(directoryPath, function (err, files) {
+    //handling error
+    if (err) {
+        return console.log('Unable to scan directory: ' + err);
+    }
+    //listing all files using forEach
+    files.forEach(function (file) {
+        // Do whatever you want to do with the file
+      console.log(file.search(name));
+      if(file.search(name)!=-1){
+        console.log(file);
+        validFile.push(file)
+      }
+    });
+
+      res.json({AI:validFile});
+});
+})
+app.get("/ListAllAI", (req, res)=>{
+  validFile=[];
+  const directoryPath = path.join(__dirname, 'AI');
+  fs.readdir(directoryPath, function (err, files) {
+    //handling error
+    if (err) {
+        return console.log('Unable to scan directory: ' + err);
+    }
+    //listing all files using forEach
+    files.forEach(function (file) {
+        // Do whatever you want to do with the file
+        console.log(file);
+        validFile.push(file)
+    });
+
+      res.json({AI:validFile});
+});
+})
 
 httpServer.listen(3000);

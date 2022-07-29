@@ -198,9 +198,6 @@ def getmove(boardstring, depth):
     move = selectmove(depth)
     board.push(move)
     return board.fen()
-
-
-
 global board
 board = chess.Board(sys.argv[1])
 move = selectmove(2)
