@@ -15,7 +15,7 @@ var storage = multer.diskStorage({
   filename: function (req, file, cb) {
     console.log(file.originalname);
     var name=req.query.name;
-    cb(null,  name.substring(0,name.indexOf("@"))+"-"+file.originalname) //Appending .jpg
+    cb(null,  name.substring(0,name.indexOf("@"))+"-"+file.originalname) //FileName
   }
 })
 const upload =multer({ storage: storage });
@@ -59,6 +59,7 @@ const pythonProcess = spawn('python',["./AI/"+params.AIName, params.Game]);
     console.log(params);
   });
 });
+//socket events
 app.post("/uploadAI", upload.single('file'), (req, res) => {
 
   res.json({ file: req.file });
